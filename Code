@@ -1,0 +1,91 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from io import StringIO
+import plotly.express as px
+from statsmodels import robust
+from scipy import stats
+from scipy.stats import ttest_ind, mannwhitneyu, chi2_contingency
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from statsmodels.stats import power
+from sklearn.preprocessing import OrdinalEncoder
+
+st.title("Data :blue[Analysis]")
+
+file = st.file_uploader("Choose a file", type=["csv"])
+if file is not None:
+    df = pd.read_csv(file)
+    st.write(df)
+else:
+   st.write("Unfortunately, it is not possible to upload this file.")
+   
+
+st.set_option('deprecation.showPyplotGlobalUse', False)
+
+variables = df.columns.tolist()
+
+var1 = st.selectbox("Select variable 1", variables)
+
+def plot_dist1(df, var1):
+
+  if df[var1].dtype == "object":
+    
+    fig1 = px.pie(df, var1, title = f"Distribution of {var1}")
+    st.plotly_chart(fig1)
+
+  else:
+
+    fig2 = px.histogram(df, var1, text_auto='.2s', title = f"Distribution of {var1}")
+    fig2.update_layout(bargap = 0.2)
+    fig2.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+    st.plotly_chart(fig2)
+
+plot_dist1(df, var1)
+
+var2 = st.selectbox("Select variable 2", variables)
+
+def plot_dist2(df, var2):
+
+  if df[var2].dtype == "object":
+    
+    fig3 = px.pie(df, var2, title = f"Distribution of {var2}")
+    st.plotly_chart(fig3)
+
+  else:
+
+    fig4 = px.histogram(df, var2, text_auto='.2s', title = f"Distribution of {var2}")
+    fig4.update_layout(bargap = 0.2)
+    fig4.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+    st.plotly_chart(fig4)
+
+plot_dist2(df, var2)
+
+algo = st.selectbox("Select a hypothesis testing algorithm:", ["t-test", "U-test", "chi-SQUARE test"])
+
+var1 = st.selectbox("Select variable 1:", df.columns)
+var2 = st.selectbox("Select variable 2:", df.columns)
+
+category = df.select_dtypes(['object']).columns
+df[category] = df[category].astype('category')
+df[category] = df[category].apply(lambda x: x.cat.codes)
+
+if algo == "t-test":
+    t_stat, p_value = ttest_ind(df[var1], df[var2])
+    result = f'T-statistic: {t_stat:.4f}, P-value: {p_value:.4f}'
+elif algo == "U-test":
+    statistic, p_value = mannwhitneyu(df[var1], df[var2])
+    result = f'T-statistic: {statistic:.4f}, P-value: {p_value:.4f}'
+elif algo == "chi-SQUARE test":
+    chi2, p_value, dof, expected = chi2_contingency(pd.crosstab(df[var1], df[var2]))
+    result = f'Chi-square statistic: {chi2:.4f}, P-value: {p_value:.4f}, Degrees of freedom: {dof}, Expected values: {expected}'
+
+st.write("Hypothesis Testing Algorithm:", algo)
+st.write("Result:", result)
+
+if p_value < 0.05:
+    st.write("We can reject the null hypothesis that the two variables are equal.")
+else:
+    st.write("We cannot reject the null hypothesis that the two variables are equal.")
