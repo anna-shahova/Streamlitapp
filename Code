@@ -1,3 +1,5 @@
+#import the necessary libraries. These libraries include `streamlit`, `pandas`, `plotly`, and `scipy.stats`.
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -13,7 +15,11 @@ import statsmodels.formula.api as smf
 from statsmodels.stats import power
 from sklearn.preprocessing import OrdinalEncoder
 
+#create a title for the app.
+
 st.title("Data :blue[Analysis]")
+
+#create a file uploader widget. This widget allows users to upload a CSV file to the app.
 
 file = st.file_uploader("Choose a file", type=["csv"])
 if file is not None:
@@ -22,28 +28,37 @@ if file is not None:
 else:
    st.write("Unfortunately, it is not possible to upload this file.")
    
+#set a global option to suppress warnings about deprecated Pyplot functions.
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
+#create a list of the columns in the DataFrame.
+
 variables = df.columns.tolist()
+
+#create a selectboxes widget for var1 and var2 that allows users to select a variable from the list of columns.
 
 var1 = st.selectbox("Select variable 1", variables)
 
+#create a function that plots the distribution of a variable.
+
 def plot_dist1(df, var1):
 
-  if df[var1].dtype == "object":
+  if df[var1].dtype == "object": #the var is categorical
     
-    fig1 = px.pie(df, var1, title = f"Distribution of {var1}")
+    fig1 = px.pie(df, var1, title = f"Distribution of {var1}") #create a pie chart
     st.plotly_chart(fig1)
 
-  else:
+  else: #the var is not categorical
 
-    fig2 = px.histogram(df, var1, text_auto='.2s', title = f"Distribution of {var1}")
+    fig2 = px.histogram(df, var1, text_auto='.2s', title = f"Distribution of {var1}") #create a hist with with a customizable view using plotly
     fig2.update_layout(bargap = 0.2)
     fig2.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
     st.plotly_chart(fig2)
 
 plot_dist1(df, var1)
+
+#the same code for var2
 
 var2 = st.selectbox("Select variable 2", variables)
 
@@ -63,14 +78,20 @@ def plot_dist2(df, var2):
 
 plot_dist2(df, var2)
 
+#create a selectbox widget that allows users to select a hypothesis testing algorithm and two variables
+
 algo = st.selectbox("Select a hypothesis testing algorithm:", ["t-test", "U-test", "chi-SQUARE test"])
 
 var1 = st.selectbox("Select variable 1:", df.columns)
 var2 = st.selectbox("Select variable 2:", df.columns)
 
+#convert the DataFrame to a format that can be used for hypothesis testing. This is done by converting the categorical columns to numeric columns.
+
 category = df.select_dtypes(['object']).columns
 df[category] = df[category].astype('category')
 df[category] = df[category].apply(lambda x: x.cat.codes)
+
+#perform the selected hypothesis testing algorithm.
 
 if algo == "t-test":
     t_stat, p_value = ttest_ind(df[var1], df[var2])
@@ -82,8 +103,12 @@ elif algo == "chi-SQUARE test":
     chi2, p_value, dof, expected = chi2_contingency(pd.crosstab(df[var1], df[var2]))
     result = f'Chi-square statistic: {chi2:.4f}, P-value: {p_value:.4f}, Degrees of freedom: {dof}, Expected values: {expected}'
 
+#display the results of the hypothesis testing algorithm.
+
 st.write("Hypothesis Testing Algorithm:", algo)
 st.write("Result:", result)
+
+#check if the p-value is less than 0.05. If it is, then the null hypothesis is rejected. Otherwise, the null hypothesis is not rejected.
 
 if p_value < 0.05:
     st.write("We can reject the null hypothesis that the two variables are equal.")
